@@ -11,6 +11,8 @@ import (
 	"github.com/jgolang/api"
 	"github.com/jgolang/config"
 	"github.com/jgolang/log"
+	"github.com/jgolang/redis"
+	"github.com/jhuygens/cache"
 	"github.com/jhuygens/security"
 )
 
@@ -24,6 +26,12 @@ func init() {
 	api.Print = log.Printf
 	api.PrintError = log.Error
 	api.Fatal = log.Fatal
+	// register redis in cache package
+	_, err := redis.DefaultClient(config.GetString("cache.host"))
+	if err != nil {
+		log.Fatal(err)
+	}
+	cache.Register(redis.RConnect{})
 }
 
 func main() {

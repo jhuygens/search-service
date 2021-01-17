@@ -7,10 +7,10 @@ import (
 	"net/url"
 
 	"github.com/jgolang/api"
+	"github.com/jgolang/config"
 	"github.com/jgolang/log"
 	"github.com/jhuygens/cache"
 	searcher "github.com/jhuygens/searcher-engine"
-	"go.mnc.gt/config"
 )
 
 func search(filter searcher.Filter, offset, limit int, url *url.URL) api.Response {
@@ -49,6 +49,14 @@ func search(filter searcher.Filter, offset, limit int, url *url.URL) api.Respons
 				StatusCode: http.StatusInternalServerError,
 			}
 		}
+		if items == nil {
+			log.Error("Not get items")
+			return api.Error{
+				Message:    "Por favor intenta mas tarde",
+				ErrorCode:  "9",
+				StatusCode: http.StatusInternalServerError,
+			}
+		}
 	}
 	total := len(items)
 	return api.Success{
@@ -65,15 +73,24 @@ func search(filter searcher.Filter, offset, limit int, url *url.URL) api.Respons
 	}
 }
 
-func getCurrentURL(uri string) string {
-	return fmt.Sprintf("%v%v", config.GetString("general.host"), uri)
+func getCacheItems(searchKey string, offset, limit int) ([]searcher.Item, error) {
+	result, err := cache.Get(searchKey)
+	if err != nil {
+		return nil, err
+	}
+	if result == "" {
+		return nil, nil
+	}
+	var items []searcher.Item
+	err = json.Unmarshal([]byte(result), &items)
+	if err != nil {
+		return nil, err
+	}
+	return items, nil
 }
 
-func getPreviousURL(queryValues url.Values, offset, limit int) string {
-	if offset <= 0 {
-		return ""
-	}
-	return generateSearchURL(queryValues, getPreviousOffset(offset, limit), limit)
+func getCurrentURL(uri string) string {
+	return fmt.Sprintf("%v%v", config.GetString("general.host"), uri)
 }
 
 func getNextURL(queryValues url.Values, offset, limit, total int) string {
@@ -84,6 +101,14 @@ func getNextURL(queryValues url.Values, offset, limit, total int) string {
 	return generateSearchURL(queryValues, nextOffset, limit)
 }
 
+func getNextOffset(currentOffset, limit, total int) int {
+	offset := currentOffset + limit
+	if offset > total {
+		offset = total
+	}
+	return offset
+}
+
 func generateSearchURL(queryValues url.Values, offset, limit int) string {
 	q := queryValues.Get("q")
 	typeResource := queryValues.Get("type")
@@ -92,30 +117,17 @@ func generateSearchURL(queryValues url.Values, offset, limit int) string {
 	return fmt.Sprintf("%v/v1/search?%v", config.GetString("general.host"), queryString)
 }
 
-func getNextOffset(currentOffset, limit, total int) int {
-	offset := currentOffset + limit
-	if offset > total {
-		offset = total
+func getPreviousURL(queryValues url.Values, offset, limit int) string {
+	if offset <= 0 {
+		return ""
 	}
-	return offset
+	return generateSearchURL(queryValues, getPreviousOffset(offset, limit), limit)
 }
+
 func getPreviousOffset(currentOffset, limit int) int {
 	offset := currentOffset - limit
 	if offset < 0 {
 		offset = 0
 	}
 	return offset
-}
-
-func getCacheItems(searchKey string, offset, limit int) ([]searcher.Item, error) {
-	result, err := cache.Get(searchKey)
-	if err != nil {
-		return nil, err
-	}
-	var items []searcher.Item
-	err = json.Unmarshal([]byte(result), &items)
-	if err != nil {
-		return nil, err
-	}
-	return items, nil
 }
