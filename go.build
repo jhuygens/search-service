@@ -1,0 +1,27 @@
+#! /bin/bash
+
+go_build() {
+    echo "Golang build: "
+    echo "[Step 1/2]: go build -o main"
+    if ! go build -o main; then
+        echo "Error: No build golang binary"
+        exit 1
+    fi
+    echo "[Step 2/2]: ./main"
+    ./main
+}
+rm -rf main
+go_build
+
+# # double brackets to test, single equals sign, empty string for just 'enter' in this case...
+# # if [[ ... ]] is followed by semicolon and 'then' keyword
+# reload() {
+#     read -s -n 1 key # -s: do not echo input character. -n 1: read only 1 character (separate with space)
+#     if [[ $key = "r" ]]; then
+#         go_build
+#     else
+#         echo "You pressed '$key'"
+#     fi
+# }
+
+# go_build
