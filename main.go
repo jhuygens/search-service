@@ -43,8 +43,7 @@ func init() {
 func main() {
 	router := mux.NewRouter()
 	port := config.GetInt("services.search.port")
-	// tokenAuthMiddlewares := api.MiddlewaresChain(api.ContentExtractor, api.CustomToken)
-	tokenAuthMiddlewares := api.MiddlewaresChain(addEmptyBodyRequest, api.ContentExtractor)
+	tokenAuthMiddlewares := api.MiddlewaresChain(addEmptyBodyRequest, api.ContentExtractor, api.CustomToken)
 
 	router.HandleFunc("/v1/search", tokenAuthMiddlewares(searchHandler)).Methods(http.MethodGet)
 
