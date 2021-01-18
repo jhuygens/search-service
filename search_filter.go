@@ -4,6 +4,7 @@ import (
 	"regexp"
 	"strings"
 
+	"github.com/jgolang/api"
 	searcher "github.com/jhuygens/searcher-engine"
 )
 
@@ -70,4 +71,21 @@ func getFieldValuesStr(s string) []string {
 	re := regexp.MustCompile(valuesLayout)
 	values := re.FindAllString(s, -1)
 	return values
+}
+
+func validateLibraryExist(library string) api.Response {
+	var libraryExist = false
+	for _, searcherName := range searcher.GetSearchersRegistryNames() {
+		if library == searcherName {
+			libraryExist = true
+			break
+		}
+	}
+	if !libraryExist {
+		return api.Error{
+			Title:   "Librería de busqueda",
+			Message: "La librería de búsqueda actualmente no está disponible",
+		}
+	}
+	return nil
 }

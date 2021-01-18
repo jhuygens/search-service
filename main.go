@@ -13,20 +13,28 @@ import (
 	"github.com/jgolang/log"
 	"github.com/jgolang/redis"
 	"github.com/jhuygens/cache"
+	_ "github.com/jhuygens/itunes-searcher"
 	"github.com/jhuygens/security"
 )
 
 var (
 	defaultCacheExpire = config.GetInt("general.default_cache_expire")
+	searchersRegister  = make(map[int]string)
 )
 
 func init() {
-	// api package custom config
+	// Load searchers-register names (library names)
+	searchersRegister[0] = config.GetString("searchers.itunes")
+	searchersRegister[1] = config.GetString("searchers.tvmaze")
+	searchersRegister[2] = config.GetString("searchers.crcind")
+
+	// Api package custom config
 	api.CustomTokenValidatorFunc = security.ValidateAccessTokenFunc
 	api.Print = log.Printf
 	api.PrintError = log.Error
 	api.Fatal = log.Fatal
-	// register redis in cache package
+
+	// Register redis in cache package
 	_, err := redis.DefaultClient(config.GetString("cache.host"))
 	if err != nil {
 		log.Fatal(err)

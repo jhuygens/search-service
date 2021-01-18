@@ -21,7 +21,7 @@ func search(filter searcher.Filter, offset, limit int, url *url.URL) api.Respons
 			Message: "Por favor intenta mas tarde",
 		}
 	}
-	items, err := getCacheItems(searchKey, offset, limit)
+	items, total, err := getCacheItems(searchKey, offset, limit)
 	if err != nil {
 		log.Error(err)
 		return api.Error{
@@ -40,7 +40,7 @@ func search(filter searcher.Filter, offset, limit int, url *url.URL) api.Respons
 				StatusCode: http.StatusInternalServerError,
 			}
 		}
-		items, err = getCacheItems(searchKey, offset, limit)
+		items, total, err = getCacheItems(searchKey, offset, limit)
 		if err != nil {
 			log.Error(err)
 			return api.Error{
@@ -50,15 +50,9 @@ func search(filter searcher.Filter, offset, limit int, url *url.URL) api.Respons
 			}
 		}
 		if items == nil {
-			log.Error("Not get items")
-			return api.Error{
-				Message:    "Por favor intenta mas tarde",
-				ErrorCode:  "9",
-				StatusCode: http.StatusInternalServerError,
-			}
+			log.Warn("Not get items")
 		}
 	}
-	total := len(items)
 	return api.Success{
 		Message: fmt.Sprintf("Search key: %v", searchKey),
 		Data: Paging{
@@ -67,26 +61,38 @@ func search(filter searcher.Filter, offset, limit int, url *url.URL) api.Respons
 			Limit:    limit,
 			Next:     getNextURL(url.Query(), offset, limit, total),
 			Offset:   offset,
-			Previous: getPreviousURL(url.Query(), offset, limit),
+			Previous: getPreviousURL(url.Query(), offset, limit, total),
 			Total:    total,
 		},
 	}
 }
 
-func getCacheItems(searchKey string, offset, limit int) ([]searcher.Item, error) {
+func getCacheItems(searchKey string, offset, limit int) ([]searcher.Item, int, error) {
 	result, err := cache.Get(searchKey)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 	if result == "" {
-		return nil, nil
+		return nil, 0, nil
 	}
 	var items []searcher.Item
 	err = json.Unmarshal([]byte(result), &items)
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
-	return items, nil
+	end := offset + limit
+	total := len(items)
+	if end >= total {
+		end = total - 1
+	}
+	if offset < 0 {
+		offset = 0
+	}
+	if offset >= total {
+		offset = total - 1
+	}
+	itemsResponse := items[offset:end]
+	return itemsResponse, total, nil
 }
 
 func getCurrentURL(uri string) string {
@@ -114,11 +120,14 @@ func generateSearchURL(queryValues url.Values, offset, limit int) string {
 	typeResource := queryValues.Get("type")
 	library := queryValues.Get("library")
 	queryString := url.PathEscape(fmt.Sprintf("q=%s&type=%v&library=%v&offset=%v&limit=%v", q, typeResource, library, offset, limit))
-	return fmt.Sprintf("%v/v1/search?%v", config.GetString("general.host"), queryString)
+	return fmt.Sprintf("%v?%v", config.GetString("services.search.paging.search.url"), queryString)
 }
 
-func getPreviousURL(queryValues url.Values, offset, limit int) string {
+func getPreviousURL(queryValues url.Values, offset, limit, total int) string {
 	if offset <= 0 {
+		return ""
+	}
+	if total == 0 {
 		return ""
 	}
 	return generateSearchURL(queryValues, getPreviousOffset(offset, limit), limit)

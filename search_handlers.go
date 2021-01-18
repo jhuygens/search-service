@@ -38,6 +38,12 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 	library := r.URL.Query().Get("library")
 	if library == "" {
 		library = "all"
+	} else {
+		response = validateLibraryExist(library)
+		if response != nil {
+			response.Write(w)
+			return
+		}
 	}
 	types := strings.Split(typeResource, ",")
 	filter := parseQueryToSearchFilter(q)
