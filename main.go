@@ -13,21 +13,19 @@ import (
 	"github.com/jgolang/log"
 	"github.com/jgolang/redis"
 	"github.com/jhuygens/cache"
-	_ "github.com/jhuygens/itunes-searcher"
 	"github.com/jhuygens/security"
+
+	// search-engine autoregistry searchers
+	_ "github.com/jhuygens/crcind-searcher"
+	_ "github.com/jhuygens/itunes-searcher"
+	_ "github.com/jhuygens/tvmaze-searcher"
 )
 
 var (
 	defaultCacheExpire = config.GetInt("general.default_cache_expire")
-	searchersRegister  = make(map[int]string)
 )
 
 func init() {
-	// Load searchers-register names (library names)
-	searchersRegister[0] = config.GetString("searchers.itunes")
-	searchersRegister[1] = config.GetString("searchers.tvmaze")
-	searchersRegister[2] = config.GetString("searchers.crcind")
-
 	// Api package custom config
 	api.CustomTokenValidatorFunc = security.ValidateAccessTokenFunc
 	api.Print = log.Printf
@@ -46,7 +44,7 @@ func main() {
 	router := mux.NewRouter()
 	port := config.GetInt("services.search.port")
 	// tokenAuthMiddlewares := api.MiddlewaresChain(api.ContentExtractor, api.CustomToken)
-	tokenAuthMiddlewares := api.MiddlewaresChain(OmitRequestGET, api.ContentExtractor)
+	tokenAuthMiddlewares := api.MiddlewaresChain(addEmptyBodyRequest, api.ContentExtractor)
 
 	router.HandleFunc("/v1/search", tokenAuthMiddlewares(searchHandler)).Methods(http.MethodGet)
 
@@ -56,8 +54,7 @@ func main() {
 	}
 }
 
-// OmitRequestGET doc ...
-func OmitRequestGET(next http.HandlerFunc) http.HandlerFunc {
+func addEmptyBodyRequest(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		var requestBody api.JSONRequest
 		if r.Method == http.MethodGet {

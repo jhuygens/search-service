@@ -85,13 +85,19 @@ func getCacheItems(searchKey string, offset, limit int) ([]searcher.Item, int, e
 	if end >= total {
 		end = total - 1
 	}
-	if offset < 0 {
-		offset = 0
-	}
 	if offset >= total {
 		offset = total - 1
 	}
+	if offset < 0 {
+		offset = 0
+	}
+	if end < 0 {
+		end = 0
+	}
 	itemsResponse := items[offset:end]
+	if total == 1 {
+		itemsResponse = items
+	}
 	return itemsResponse, total, nil
 }
 

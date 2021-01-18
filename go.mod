@@ -9,7 +9,9 @@ require (
 	github.com/jgolang/log v1.2.4
 	github.com/jgolang/redis v0.0.0-20200916005844-a924a15a64af
 	github.com/jhuygens/cache v0.0.0-20210117053223-7de147b2a817
-	github.com/jhuygens/itunes-searcher v0.0.0-20210118022208-c721b20e886f
+	github.com/jhuygens/crcind-searcher v0.0.0-20210118103935-418b24e591f2
+	github.com/jhuygens/itunes-searcher v0.0.0-20210118044144-e0e1978cd480
 	github.com/jhuygens/searcher-engine v0.0.0-20210118022047-f69a8886e2d8
 	github.com/jhuygens/security v0.0.0-20210116053106-5cc7ab2e90a1
+	github.com/jhuygens/tvmaze-searcher v0.0.0-20210118045442-0d4b617d2791
 )

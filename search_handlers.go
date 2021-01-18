@@ -14,11 +14,11 @@ func searchHandler(w http.ResponseWriter, r *http.Request) {
 		response.Write(w)
 		return
 	}
-	typeResource, response := api.GetQueryParamValueString("type", r)
-	if response != nil {
-		response.Write(w)
-		return
+	typeResource, _ := api.GetQueryParamValueString("type", r)
+	if typeResource == "" {
+		typeResource = "all"
 	}
+
 	var limit = 20
 	var offset = 0
 	if r.URL.Query().Get("limit") != "" {
